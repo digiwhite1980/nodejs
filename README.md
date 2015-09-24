@@ -54,5 +54,26 @@ When using the NODEJS_VERSION environment variable the user may chose the NodeJS
 #       This will set the newrelic license
 ```
 
+# Run examples
+
+```shell
+docker run -d --name nodejs -p 80:80 \
+	-e GIT_REPO=git@github.com:digiwhite1980/nodejs.git \
+	-e GIT_PATH=path/to \
+	-e NODEJS_EXEC=app.js \
+	-e NODEJS_VERSION=latest \
+	digiwhite/nodejs
+
+docker run -d --name nodejs -p 80:80 \
+	-e GIT_REPO=git@github.com:digiwhite1980/nodejs.git \
+	-e GIT_PATH=path/to \
+	-e NODEJS_EXEC=app.js \
+	-e NODEJS_VERSION=stable \
+	-e NEWRELIC=1 \
+	-e NEWRELIC_LICENSE={key} \
+	-e TZ={you timezone} \
+	digiwhite/nodejs
+```	
+
 # Tracking
 2015-09-24: initial version
