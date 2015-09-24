@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ "${GIT_REPO}" = "" ]; then
+	echo "[ERROR]: unable to locate GIT_REPO"
+	exit 1
+fi
+
+###########################################################################
+# We have all information needed to start a git clone
+###########################################################################
+
+[[ ! -d ${GIT_TMP} ]] && mkdir -p ${GIT_TMP}
+
+cd ${GIT_TMP}
+
+###########################################################################
+# We support multiple GIT_REPO vars in array form
+###########################################################################
+
+for REPO in ${GIT_REPO[@]}
+do
+	git clone ${REPO}
+	if [ $? -ne 0 ]; then
+		echo "[ERROR]: cloning ${GIT_REPO}"
+		exit 1
+	fi
+done
+
+###########################################################################
+# We now check to see if there is a package.json available
+###########################################################################
+if [ -f ${GIT_TMP}/${NODEJS_PATH}/package.json ]; then
+	cd ${GIT_TMP}/${NODEJS_PATH}
+	npm install | tee -a ${GIT_LOG} > /dev/stderr 2>&1
+	cd -
+fi

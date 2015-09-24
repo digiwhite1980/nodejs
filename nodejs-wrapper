@@ -1,0 +1,120 @@
+#!/bin/bash
+
+##############################################################################
+# Default Docker image for NodeJS 
+# ---------------------------------------------------------------------------- 
+#
+# Mandatory environment vars:
+# - NODEJS_PATH
+#	Path to the nodejs application files.
+#	This path is set automatically when using GIT
+# - NODEJS_EXEC
+#	NodeJS application executable
+#
+# Optional environment vars:
+# - NODEJS_VERSION
+#	Supports multiple node versions:
+#	0.x.x
+#	latest
+#	stable
+# - EXEC_CMD
+#	executable to use while running NodeJS executable
+# - GIT_REPO
+#	GIT repo where application data is stored
+#	Currently this option is mandatory.
+# - GIT_PTH
+#	Path within the GIT_REPO where executable NodeJS file is stored
+#	If not given, . is used.
+# - GIT_LOG
+#	Path to git log 
+#
+# - NEWRELIC
+#	If set to 1 the newrelic agent will be started
+# - NEWRELIC_LICENSE
+#	This will set the newrelic license 
+#
+# The default Docker images uses SSH key ssh-git key to clone. 
+###############################################################################
+
+[[ "${EXEC_CMD}" == "" ]] && EXEC_CMD=node
+[[ "${GIT_PTH}" = "" ]]   && GIT_PTH=.
+[[ "${GIT_TMP}" = "" ]]   && GIT_TMP=/tmp/git-sync
+[[ "${GIT_LOG}" = "" ]]   && GIT_LOG=/tmp/git.log
+
+[[ "${GIT_SYNC_TIMEOUT}" = "" ]] && GIT_SYNC_TIMEOUT=30 
+export GIT_SYNC_TIMEOUT
+
+export GIT_PTH
+export GIT_LOG
+export GIT_TMP
+
+[[ "${NODEJS_PATH}" = "" ]] && NODEJS_PATH=${GIT_PTH}
+
+if [ "${NODEJS_EXEC}" = "" -o "${NODEJS_PATH}" = "" ]; then
+	echo "[ERROR]: mandatory environment vars NODEJS_EXEC && NODEJS_PATH not set"
+	exit 1
+fi
+
+SSH_ENVIRONMENT=/root/.ssh/agent-environment
+SSH_KEY=/root/.ssh/ssh-git
+SSH_CNF=/root/.ssh/config
+SSH_TMP=/tmp/ssh.log
+
+if [ "${GIT_REPO}" != "" ]; then
+
+	############################################################################################
+	# We have a GIT_REPO setting so we will clone the repository and run the nodejs application #
+	#############################################################################################
+
+	echo "StrictHostKeyChecking no" >> ${SSH_CNF}
+
+	if [ -f ${SSH_KEY} ]; then
+		eval $(ssh-agent -s)
+		ssh-add ${SSH_KEY} | tee -a ${GIT_LOG} > /dev/stderr 2>&1
+	fi
+
+	. /usr/bin/nodejs-git | tee -a ${GIT_LOG} > /dev/stderr 2>&1
+
+	if [ ! -f ${GIT_TMP}/${NODEJS_PATH}/${NODEJS_EXEC} ]; then
+		echo "[ERROR]: ${NODEJS_EXEC} file not found in ${GIT_TMP}/${NODEJS_PATH}"
+		exit 1
+	fi
+
+	echo "Currently working in	: GIT_REPO"
+	echo "==============================================="
+	echo "Current dir		: $(pwd)"
+	echo "GIT_TMP			: ${GIT_TMP}"
+	echo "cd to GIT_PTH		: ${GIT_PTH}"
+	echo "NODEJS_PATH		: ${NODEJS_PATH}"
+	echo "NODEJS_LATEST		: ${NODEJS_LATEST}"
+	echo "GIT_SYNC			: ${GIT_SYNC}"
+	echo "==============================================="
+	cd ${GIT_TMP}/${GIT_PTH}
+else
+	echo "Currently working in 	: image mode"
+	echo "==============================================="
+	echo "NODEJS_PATH		: ${NODEJS_PATH}"
+	echo "NODEJS_LATEST		: ${NODEJS_LATEST}"
+	echo "==============================================="
+	cd ${NODEJS_PATH}
+fi
+
+if [ "${NODEJS_VERSION}" != "" ]; then
+	npm -g install n
+	n ${NODEJS_VERSION}
+fi
+
+##########################################################################################
+# HOOK: newrelic-sysmond agent
+##########################################################################################
+
+if [ "${NEWRELIC}" = "1" ]; then
+	if [ "${NEWRELIC_LICENSE}" != "" ]; then
+		/usr/sbin/nrsysmond-config --set license_key=${NEWRELIC_LICENSE}
+	fi
+	/usr/sbin/service newrelic-sysmond start
+fi
+
+##########################################################################################
+
+exec ${EXEC_CMD} ${NODEJS_EXEC}
