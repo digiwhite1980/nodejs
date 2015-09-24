@@ -15,7 +15,7 @@ The script supports package.json dependencies. If a packege.json file is availab
 meet the required dependencies.
 
 # NodeJS version
-When using the NODEJS_VERSION environment variable, the use may chose the NodeJS version he wishes. latest en stable are also possible.
+When using the NODEJS_VERSION environment variable the user may chose the NodeJS version he wishes. latest en stable are also possible.
 
 # NodeJS wrapper script options:
 ```bash
