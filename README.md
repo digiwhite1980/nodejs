@@ -7,8 +7,8 @@ This NodeJS image supports multiple options including:
 It is possible to clone this image and inject the JS code through an ADD option in the Dockerfile.
 When using the ADD option, please make sure to use NODEJS_PATH var to meet the path where the source code is located.
 
-A better solution would be to pull the source code from GIT using a SSH key. Please make sure the private key does 
-not contain a password.
+A better solution would be to pull the source code from GIT using a SSH key. If applicable: please make sure the private key does 
+not contain a password. Also be sure to use "ADD ssh-key /root/.ssh/ssh-git" or the git pull command will not work.
 
 # package.json
 The script supports package.json dependencies. If a packege.json file is available, npm will run the install command to 
